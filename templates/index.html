@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BBCA Predictor</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0d0d0d;
+            color: #e5e5e5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ── NAVBAR ── */
+        .navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 28px;
+            height: 52px;
+            background: #111;
+            border-bottom: 1px solid #1f1f1f;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .navbar-brand { font-size: 14px; font-weight: 600; color: #fff; letter-spacing: 0.02em; }
+        .navbar-icons { display: flex; gap: 18px; align-items: center; }
+        .navbar-icons svg { width: 17px; height: 17px; fill: none; stroke: #888; stroke-width: 1.8; cursor: pointer; transition: stroke 0.15s; }
+        .navbar-icons svg:hover { stroke: #ccc; }
+        .avatar { width: 26px; height: 26px; border-radius: 50%; background: #2e2e2e; border: 1px solid #3a3a3a; cursor: pointer; }
+
+        /* ── PAGE ── */
+        .page {
+            flex: 1;
+            padding: 32px 36px 0;
+            max-width: 1000px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        /* ── HERO ── */
+        .hero {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 36px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #1a1a1a;
+        }
+        .ticker-row { display: flex; align-items: center; gap: 10px; }
+        .ticker-symbol { font-size: 52px; font-weight: 800; color: #fff; line-height: 1; letter-spacing: -0.02em; }
+        .ticker-badge { font-size: 10px; font-weight: 600; color: #888; background: #1e1e1e; border: 1px solid #2e2e2e; padding: 3px 7px; border-radius: 4px; letter-spacing: 0.08em; align-self: flex-end; margin-bottom: 8px; }
+        .company-name { font-size: 12px; color: #555; margin-top: 5px; }
+        .hero-right { text-align: right; }
+        .last-price-label { font-size: 11px; color: #555; letter-spacing: 0.04em; margin-bottom: 4px; }
+        .last-price-value { font-size: 38px; font-weight: 700; color: #fff; letter-spacing: -0.01em; line-height: 1; }
+        .hero-sub { font-size: 11px; color: #555; margin-top: 6px; }
+        .hero-sub span { color: #777; }
+
+        /* ── SECTION ── */
+        .section { margin-bottom: 28px; }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        .section-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .section-dot.prev  { background: #444; }
+        .section-dot.today { background: #3b82f6; }
+        .section-dot.tmrw  { background: #8b5cf6; }
+        .section-dot.model { background: #f59e0b; }
+
+        .section-title {
+            font-size: 10px;
+            font-weight: 700;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+        }
+
+        /* ── CARD GRID ── */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 3fr 2fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .grid-2-eq {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .grid-5 {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+        }
+
+        .section > *:last-child { margin-bottom: 0; }
+
+        /* ── CARD ── */
+        .card {
+            background: #141414;
+            border: 1px solid #1e1e1e;
+            border-radius: 10px;
+            padding: 16px 18px;
+        }
+        .card-label {
+            font-size: 10px;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 8px;
+        }
+        .card-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: #e0e0e0;
+            letter-spacing: -0.01em;
+            line-height: 1.1;
+        }
+        .card-value.lg { font-size: 26px; }
+        .card-value.sm { font-size: 18px; }
+        .card-value.up   { color: #4ade80; }
+        .card-value.down { color: #f87171; }
+        .card-value.muted { color: #888; }
+        .card-sub {
+            font-size: 11px;
+            color: #444;
+            margin-top: 4px;
+        }
+        .card-sub.up   { color: #4ade80; }
+        .card-sub.down { color: #f87171; }
+
+        /* ── ERROR / NOTE ── */
+        .error-panel { background: #1a0a0a; border: 1px solid #3a1010; border-radius: 10px; padding: 16px; margin-bottom: 20px; font-size: 13px; color: #f87171; line-height: 1.6; }
+
+        .note-strip {
+            font-size: 11px;
+            color: #333;
+            padding: 12px 16px;
+            background: #111;
+            border: 1px solid #1a1a1a;
+            border-radius: 8px;
+            line-height: 1.7;
+            margin-top: 8px;
+        }
+        .note-strip strong { color: #444; }
+
+        /* ── FOOTER ── */
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 36px;
+            border-top: 1px solid #1a1a1a;
+            margin-top: 32px;
+            max-width: 1000px;
+            width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .footer-left { font-size: 11px; color: #333; }
+        .footer-links { display: flex; gap: 20px; }
+        .footer-links a { font-size: 11px; color: #444; text-decoration: none; transition: color 0.15s; }
+        .footer-links a:hover { color: #888; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <span class="navbar-brand">BBCA Predictor</span>
+        <!-- <div class="navbar-icons">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <div class="avatar"></div>
+        </div> -->
+    </nav>
+
+    <div class="page">
+
+        {% if error_message %}
+        <div class="error-panel"><strong>Terjadi error:</strong> {{ error_message }}</div>
+        {% endif %}
+
+        {% if result %}
+
+        <!-- HERO -->
+        <div class="hero">
+            <div>
+                <div class="ticker-row">
+                    <span class="ticker-symbol">{{ result.ticker_display }}</span>
+                    <span class="ticker-badge">IDX</span>
+                </div>
+                <div class="company-name">{{ result.company_name }}</div>
+            </div>
+            <div class="hero-right">
+                <div class="last-price-label">Harga Terakhir ({{ result.latest_date }})</div>
+                <div class="last-price-value">Rp {{ "{:,.2f}".format(result.current_close) }}</div>
+                <div class="hero-sub">Sumber: <span>{{ result.data_source }}</span></div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════
+             SECTION 1: HARGA KEMARIN
+        ══════════════════════════════════════ -->
+        <div class="section">
+            <div class="section-header">
+                <span class="section-dot prev"></span>
+                <span class="section-title">Harga Kemarin</span>
+            </div>
+
+            <div class="grid-3">
+                <div class="card">
+                    <div class="card-label">Harga Close Sebelumnya</div>
+                    <div class="card-value lg">Rp {{ "{:,.2f}".format(result.previous_close) }}</div>
+                    <div class="card-sub">{{ result.previous_date }}</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">Harga Saat Ini</div>
+                    <div class="card-value lg">Rp {{ "{:,.2f}".format(result.current_close) }}</div>
+                    <div class="card-sub">{{ result.latest_date }}</div>
+                </div>
+                {% set actual_chg = result.current_close - result.previous_close %}
+                {% set actual_chg_pct = (actual_chg / result.previous_close) * 100 %}
+                <div class="card">
+                    <div class="card-label">Perubahan Harga</div>
+                    <div class="card-value lg {% if actual_chg >= 0 %}up{% else %}down{% endif %}">
+                        {% if actual_chg >= 0 %}+{% endif %}Rp {{ "{:,.2f}".format(actual_chg) }}
+                    </div>
+                    <div class="card-sub {% if actual_chg >= 0 %}up{% else %}down{% endif %}">
+                        {% if actual_chg >= 0 %}+{% endif %}{{ "{:.2f}".format(actual_chg_pct) }}% dari hari sebelumnya
+                    </div>
+                </div>
+                <!-- <div class="card">
+                    <div class="card-label">Selisih Harga Saat Ini - Penutupan Hari Kemarin</div>
+                    <div class="card-value {% if result.today_difference >= 0 %}up{% else %}down{% endif %}">
+                        {% if result.today_difference >= 0 %}+{% endif %}Rp {{ "{:,.2f}".format(result.today_difference) }}
+                    </div>
+                    <div class="card-sub {% if actual_chg >= 0 %}up{% else %}down{% endif %}">
+                        {% if actual_chg >= 0 %}+{% endif %}{{ "{:.2f}".format(actual_chg_pct) }}% dari hari sebelumnya
+                    </div>
+                    <div class="card-sub">Harga saat ini − hari sebelumnya</div>
+                </div> -->
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════
+            SECTION 2: PREDIKSI HARI INI
+        ══════════════════════════════════════ -->
+        <div class="section">
+            <div class="section-header">
+                <span class="section-dot today"></span>
+                <span class="section-title">Prediksi Hari Ini</span>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-label">Prediksi Penutupan(Close) Hari Ini</div>
+                    <div class="card-value lg">Rp {{ "{:,.2f}".format(result.predicted_today_close) }}</div>
+                    <div class="card-sub">{{ result.latest_date }}</div>
+                </div>
+                <!-- ✅ HITUNG ULANG PERUBAHAN PREDIKSI -->
+                {% set pred_chg = result.predicted_today_close - result.previous_close %}
+                {% set pred_chg_pct = (pred_chg / result.previous_close) * 100 %}
+                <div class="card">
+                    <div class="card-label">Arah Prediksi</div>
+                    <div class="card-value lg {% if pred_chg >= 0 %}up{% else %}down{% endif %}">
+                        {% if pred_chg >= 0 %}↑ Naik{% else %}↓ Turun{% endif %}
+                    </div>
+                    <div class="card-sub {% if pred_chg >= 0 %}up{% else %}down{% endif %}">
+                        {% if pred_chg >= 0 %}+{% endif %}{{ "{:.2f}".format(pred_chg_pct) }}% dari harga kemarin
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-3">
+                <!-- ✅ SELISIH PREDIKSI vs HARGA KEMARIN -->
+                <div class="card">
+                    <div class="card-label">Selisih Prediksi</div>
+                    <div class="card-value {% if pred_chg >= 0 %}up{% else %}down{% endif %}">
+                        {% if pred_chg >= 0 %}+{% endif %}Rp {{ "{:,.2f}".format(pred_chg) }}
+                    </div>
+                    <div class="card-sub">Prediksi hari ini − Harga kemarin</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">Tingkat Kesalahan</div>
+                    <div class="card-value muted">{{ "{:.2f}".format(result.today_error_pct | abs) }}%</div>
+                    <div class="card-sub">MAPE hari ini</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════
+             SECTION 3: PREDIKSI BESOK
+        ══════════════════════════════════════ -->
+        <div class="section">
+            <div class="section-header">
+                <span class="section-dot tmrw"></span>
+                <span class="section-title">Prediksi Besok</span>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-label">Prediksi Penutupan(Close) Besok</div>
+                    <div class="card-value lg">Rp {{ "{:,.2f}".format(result.predicted_tomorrow_close) }}</div>
+                    <div class="card-sub">{{ result.next_trading_date }}</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">Arah</div>
+                    <div class="card-value lg {% if result.tomorrow_direction == 'Naik' %}up{% elif result.tomorrow_direction == 'Turun' %}down{% endif %}">
+                        {% if result.tomorrow_direction == 'Naik' %}↑{% elif result.tomorrow_direction == 'Turun' %}↓{% else %}→{% endif %}
+                        {{ result.tomorrow_direction }}
+                    </div>
+                    <div class="card-sub {% if result.tomorrow_percentage_change >= 0 %}up{% else %}down{% endif %}">
+                        {% if result.tomorrow_percentage_change >= 0 %}+{% endif %}{{ "{:.2f}".format(result.tomorrow_percentage_change) }}% dari harga terakhir
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-3">
+                <div class="card">
+                    <div class="card-label">Selisih Prediksi</div>
+                    <div class="card-value {% if result.tomorrow_difference >= 0 %}up{% else %}down{% endif %}">
+                        {% if result.tomorrow_difference >= 0 %}+{% endif %}Rp {{ "{:,.2f}".format(result.tomorrow_difference) }}
+                    </div>
+                    <div class="card-sub">Prediksi Penutupan Besok − Harga saat ini</div>
+                </div>
+                <!-- <div class="card">
+                    <div class="card-label">Selisih (%)</div>
+                    <div class="card-value {% if result.tomorrow_percentage_change >= 0 %}up{% else %}down{% endif %}">
+                        {% if result.tomorrow_percentage_change >= 0 %}+{% endif %}{{ "{:.2f}".format(result.tomorrow_percentage_change) }}%
+                    </div>
+                    <div class="card-sub">Dari harga terakhir</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">Tingkat Kesalahan</div>
+                    <div class="card-value muted">—</div>
+                    <div class="card-sub">Belum tersedia</div>
+                </div> -->
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════
+             INFORMASI MODEL
+        ══════════════════════════════════════ -->
+        <div class="section">
+            <div class="section-header">
+                <span class="section-dot model"></span>
+                <span class="section-title">Informasi Model</span>
+            </div>
+            <div class="grid-5">
+                <div class="card">
+                    <div class="card-label">Model</div>
+                    <div class="card-value sm muted">{{ result.model }}</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">Skor R²</div>
+                    <div class="card-value sm muted">{{ "{:.4f}".format(result.r2) }}</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">MAE</div>
+                    <div class="card-value sm muted">Rp {{ "{:,.0f}".format(result.mae) }}</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">RMSE</div>
+                    <div class="card-value sm muted">Rp {{ "{:,.0f}".format(result.rmse) }}</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">MAPE Model</div>
+                    <div class="card-value sm muted">{{ "{:.2f}".format(result.mape) }}%</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="note-strip">
+            <strong>Catatan:</strong> Hasil prediksi ini digunakan untuk tujuan akademik dan demonstrasi deployment model machine learning.
+            Bukan rekomendasi investasi. Harga saham dipengaruhi kondisi pasar, laporan keuangan, dan faktor eksternal lainnya.
+        </div>
+
+        {% endif %}
+    </div>
+
+    <!-- <footer class="footer">
+        <span class="footer-left">© 2026 BBCA Predictor · Akurasi Model: {{ result.r2 | round(2) if result else '–' }}</span>
+        <div class="footer-links">
+            <a href="#">Metodologi</a>
+            <a href="/api/predict">Dokumentasi API</a>
+            <a href="#">Dukungan</a>
+        </div>
+    </footer> -->
+
+</body>
+</html>

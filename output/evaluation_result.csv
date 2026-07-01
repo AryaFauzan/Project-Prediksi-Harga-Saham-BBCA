@@ -1,0 +1,2 @@
+Model,MAE,RMSE,MAPE,R2,Best Parameters
+Random Forest Regressor,176.68453529954598,246.8386530366326,2.1056535624743695,0.950361040009017,"{'model__n_estimators': 300, 'model__min_samples_split': 2, 'model__min_samples_leaf': 2, 'model__max_features': None, 'model__max_depth': None}"
