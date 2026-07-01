@@ -201,13 +201,19 @@ model, meta = load_model()
 @st.cache_data(ttl=3600)
 def get_data():
     df = yf.download("BBCA.JK", period="2y", progress=False)
+    if df.empty:
+        raise ValueError("Data dari Yahoo Finance kosong.")
     # handle multi-index columns for newer yfinance versions
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = df.columns.get_level_values(0)
     df.reset_index(inplace=True)
     return df
 
-df = get_data()
+try:
+    df = get_data()
+except Exception as e:
+    st.error("Gagal mengambil data dari Yahoo Finance atau limit API tercapai. Silakan coba lagi nanti.")
+    st.stop()
 
 
 # ===============================
@@ -246,13 +252,17 @@ def create_feature(df):
 
 X = create_feature(df)
 
+if len(X) < 2:
+    st.error("Data setelah diproses terlalu sedikit untuk melakukan prediksi.")
+    st.stop()
+
 # Predictions
 # Tomorrow
-latest = X.tail(1)[model.feature_names_in_]
+latest = X.tail(1)[model.feature_names_in_].astype(float)
 predicted_tomorrow = float(model.predict(latest)[0])
 
 # Today (from yesterday's perspective)
-previous_row = X.iloc[-2:-1][model.feature_names_in_]
+previous_row = X.iloc[-2:-1][model.feature_names_in_].astype(float)
 predicted_today = float(model.predict(previous_row)[0])
 
 
