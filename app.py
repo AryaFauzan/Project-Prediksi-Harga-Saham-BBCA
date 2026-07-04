@@ -1,9 +1,12 @@
+
 import streamlit as st
 import pandas as pd
 import joblib
 import json
 import yfinance as yf
 import numpy as np
+import datetime
+from train_model import main as run_training
 
 # ===============================
 # PAGE CONFIG
@@ -181,6 +184,16 @@ header[data-testid="stHeader"] {
 </style>
 """, unsafe_allow_html=True)
 
+
+# ===============================
+# AUTOMATIC RETRAINING ON OPEN
+# ===============================
+if "has_trained_this_session" not in st.session_state:
+    with st.spinner("Sedang melatih ulang model dengan data terbaru (membutuhkan waktu beberapa detik/menit)..."):
+        run_training()
+    st.cache_resource.clear()
+    st.cache_data.clear()
+    st.session_state["has_trained_this_session"] = True
 
 # ===============================
 # LOAD MODEL

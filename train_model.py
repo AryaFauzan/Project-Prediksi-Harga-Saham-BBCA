@@ -2,9 +2,12 @@ import os
 import json
 import joblib
 import warnings
+import datetime
 import numpy as np
 import pandas as pd
 import yfinance as yf
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from sklearn.pipeline import Pipeline
@@ -141,7 +144,7 @@ def main():
 
     pipeline = Pipeline([
         ("imputer", SimpleImputer(strategy="median")),
-        ("model", RandomForestRegressor(random_state=42, n_jobs=-1))
+        ("model", RandomForestRegressor(random_state=42, n_jobs=1))
     ])
 
     param_distributions = {
@@ -163,7 +166,7 @@ def main():
         cv=tscv,
         scoring="neg_mean_squared_error",
         random_state=42,
-        n_jobs=-1
+        n_jobs=1
     )
 
     search.fit(X_train, y_train)
@@ -245,7 +248,8 @@ def main():
             "MAPE": float(metrics["MAPE"]),
             "R2": float(metrics["R2"])
         },
-        "last_data_date": str(df.index[-1].date())
+        "last_data_date": str(df.index[-1].date()),
+        "last_run_date": str(datetime.date.today())
     }
 
     with open("model/metadata.json", "w") as f:
