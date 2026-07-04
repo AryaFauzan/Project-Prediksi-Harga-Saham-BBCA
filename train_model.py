@@ -142,40 +142,36 @@ def main():
     print(f"Jumlah data training: {len(X_train)}")
     print(f"Jumlah data testing : {len(X_test)}")
 
-    pipeline = Pipeline([
-        ("imputer", SimpleImputer(strategy="median")),
-        ("model", RandomForestRegressor(random_state=42, n_jobs=1))
-    ])
-
-    param_distributions = {
-        "model__n_estimators": [100, 200, 300, 500],
-        "model__max_depth": [5, 10, 15, 20, None],
-        "model__min_samples_split": [2, 5, 10],
-        "model__min_samples_leaf": [1, 2, 4, 6],
-        "model__max_features": ["sqrt", "log2", None]
+    # Menggunakan parameter terbaik dari hasil tuning sebelumnya untuk mempercepat training
+    best_params = {
+        "n_estimators": 300,
+        "max_depth": None,
+        "min_samples_split": 2,
+        "min_samples_leaf": 2,
+        "max_features": None
     }
 
-    tscv = TimeSeriesSplit(n_splits=5)
+    pipeline = Pipeline([
+        ("imputer", SimpleImputer(strategy="median")),
+        ("model", RandomForestRegressor(
+            random_state=42,
+            n_jobs=1,
+            **best_params
+        ))
+    ])
 
-    print("Melatih dan tuning Random Forest Regressor...")
+    print("Melatih model Random Forest Regressor dengan parameter statis (Training Cepat)...")
+    pipeline.fit(X_train, y_train)
 
-    search = RandomizedSearchCV(
-        estimator=pipeline,
-        param_distributions=param_distributions,
-        n_iter=25,
-        cv=tscv,
-        scoring="neg_mean_squared_error",
-        random_state=42,
-        n_jobs=1
-    )
-
-    search.fit(X_train, y_train)
-
-    best_model = search.best_estimator_
+    best_model = pipeline
 
     print("Training selesai.")
-    print("Parameter terbaik:")
-    print(search.best_params_)
+    
+    # Membuat objek mock untuk search.best_params_ agar struktur kode penyimpanan metadata tidak error
+    class MockSearch:
+        pass
+    search = MockSearch()
+    search.best_params_ = {f"model__{k}": v for k, v in best_params.items()}
 
     y_pred = best_model.predict(X_test)
 
